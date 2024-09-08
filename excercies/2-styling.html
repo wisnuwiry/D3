@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2 - Styling</title>
+</head>
+
+<body>
+    <div id="container"></div>
+
+    <script type="module">
+        import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+
+        fetch('https://api.npoint.io/241d9ddae0e48a1fbf36')
+            .then(resp => resp.json())
+            .then(movies => {
+                renderSVG(movies)
+            })
+
+        const renderSVG = (movies) => {
+            const colors = { Action: "#ffc8f0", Comedy: "#cbf2bd", Animation: "#afe9ff", Drama: "#ffb09e", Other: "#fff2b4" }
+          
+            const petalPath = 'M0,0 C50,40 50,70 20,100 L0,85 L-20,100 C-50,70 -50,40 0,0';
+
+            const svg = d3.create('svg')
+                .attr('width', 500)
+                .attr('height', 100)
+                .attr('style', 'border: 1px dashed')
+
+            for (let index = 0; index < 5; index++) {
+                svg.append('path')
+                    .attr('d', petalPath)
+                    .attr('transform', `translate(${index * 100 + 50}, 0)`)
+            }
+
+            const path = svg.selectAll('path')
+                .data(movies)
+                .attr('fill', d => colors[d.genres[0]] || colors.Other)
+                .attr('fill-opacity', 0.7)
+                .attr('stroke-width', 1)
+                .attr('stroke', d => colors[d.genres[0]] || colors.Other)
+
+            document.getElementById('container').append(svg.node())
+        }
+    </script>
+</body>
+
+</html>
