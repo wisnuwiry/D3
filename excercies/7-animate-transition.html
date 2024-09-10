@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>7 - Animate Transition</title>
+</head>
+
+<body>
+    <div id="container">
+        <svg style='overflow: visible'></svg>
+    </div>
+    <button id="btn">New Data</button>
+    <p></p>
+
+    <script type="module">
+        import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+
+        function random(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function times(n, iteratee) {
+            return Array.from({ length: n }, (_, i) => iteratee(i));
+        }
+
+        window.onload = function () {
+            document.getElementById('btn').onclick = () => {
+                // randomly generate an array of data
+                const data = times(random(3, 8), i => random(0, 100));
+
+                updateBars(data)
+
+                // update div with new data array:
+                d3.select('p').text(JSON.stringify(data).replace(/\,/g, ', '))
+            }
+        }
+
+        const updateBars = (data) => {
+            const rectWidth = 50
+            const svgHeight = 100
+
+            const svg = d3.select('svg')
+                .attr('height', svgHeight)
+            const t = d3.transition().duration(1000)
+
+            svg.selectAll('rect')
+                .data(data, d => d)
+                .join(
+                    enter => {
+                        return enter.append('rect')
+                            // attribute to transition FROM
+                            .attr('x', (d, i) => i * rectWidth)
+                            .attr('height', 0)
+                            .attr('y', svgHeight)
+                            .attr('fill', 'pink')
+                            .attr('stroke', 'plum')
+                            .attr('stroke-width', 2)
+                    },
+                    update => update,
+                    exit => {
+                        exit.transition(t)
+                            // everything after here is transition TO
+                            .attr('height', 0)
+                            .attr('y', svgHeight)
+                            .remove()
+                    }
+                ) // enter + update selection
+                .attr('width', rectWidth)
+                .transition(t)
+                // attribute to transition TO
+                .attr('x', (d, i) => i * rectWidth)
+                .attr('height', d => d)
+                .attr('y', d => svgHeight - d)
+
+            document.getElementById('container').append(svg.node())
+        }
+    </script>
+</body>
+
+</html>

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>4 - Scale</title>
+    <title>5 - Group</title>
 </head>
 
 <body>
@@ -70,18 +70,48 @@
                 translate: calculateGridPos(i),
             }))
 
+            function truncateText(text, maxLength) {
+                // If the text is shorter or equal to maxLength, return it unchanged
+                if (text.length <= maxLength) {
+                    return text;
+                }
+
+                // Otherwise, return the truncated text with ellipsis
+                return text.slice(0, maxLength) + '...';
+            }
+
+
             const svg = d3.create('svg')
                 .attr('width', width)
                 .attr('height', height)
                 .attr('style', 'border: 1px dashed')
 
-            svg.selectAll('path')
-                .data(flowers).enter().append('path')
-                .attr('transform', (d, i) => `translate(${d.translate})scale(${d.scale || 1})`)
+            // Create group elements
+            const g = svg.selectAll('g')
+                .data(flowers).enter().append('g')
+                .attr('transform', d => `translate(${d.translate})`)
+
+            // create our petal paths
+            g.selectAll('path')
+                .data(d => {
+                    return Array.from({ length: d.numPetals }, (_, i) => Object.assign({}, d, { rotate: i * (3600 / d.numPetals) }))
+                })
+                .enter()
+                .append('path')
+                .attr('transform', d => `rotate(${d.rotate})scale(${d.scale})`)
                 .attr('d', d => d.path)
                 .attr('fill', d => d.color)
-                .attr('fill-opacity', 0.75)
+                .attr('fill-opacity', 0.5)
                 .attr('stroke', d => d.color)
+                .attr('stroke-width', 2)
+
+            // create title
+            g.append('text')
+                .text(d => truncateText(d.title, 20))
+                .style('font-size', '.7em')
+                .style('font-style', 'italic')
+                .attr('text-anchor', 'middle')
+                .attr('dy', '.35em')
 
             document.getElementById('container').append(svg.node())
         }

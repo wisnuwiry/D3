@@ -1,6 +1,19 @@
 # Data Visualization Basic with D3.js
 
-D3.js is probably the de facto Javascript library for creating data visualizations in the web. It has a lot of modules and functions dedicated to translating raw data onto the screen, calculating specific graph layouts, rendering different chart types...it's amazingly comprehensive, but it's also a lot. 
+D3.js is probably the de facto Javascript library for creating data visualizations in the web. It has a lot of modules and functions dedicated to translating raw data onto the screen, calculating specific graph layouts, rendering different chart types...it's amazingly comprehensive, but it's also a lot.
+
+## Excercies
+
+| No  | Excercise  |
+|---|---|
+| 1  | Smile ([link](./excercies/1-smile.html))  |
+| 2  | Styling ([link](./excercies/2-styling.html))  |
+| 3  | Dynamic Render ([link](./excercies/3-dynamic-render.html))  |
+| 4  | Scale ([link](./excercies/4-scale.html))  |
+| 5  | Group ([link](./excercies/5-group.html))  |
+| 6  | Update ([link](./excercies/6-update.html))  |
+| 7  | Animate Transition ([link](./excercies/7-animate-transition.html))  |
+
 
 ## ✨ lessons & key takeaways 
 
@@ -66,6 +79,14 @@ Deep dive about SVG: https://www.sarasoueidan.com/blog/svg-coordinate-systems/
 Example path to draw a flower
 
 ![](./assets/flower_svg_path_breakdown.jpeg)
+
+## SVG G
+
+The  `<g>` SVG element is a container used to group other SVG elements.
+
+Transformations applied to the `<g>` element are performed on its child elements, and its attributes are inherited by its children.
+
+
 
 ## D3 API
 
@@ -161,6 +182,8 @@ D3.js scales to translate raw data into visual channels.
 
 ### D3 Scale methods
 
+Scales map a dimension of abstract data to a visual representation. Although most often used for encoding data as position, say to map time and temperature to a horizontal and vertical position in a scatterplot, scales can represent virtually any visual encoding, such as color, stroke width, or symbol size. Scales can also be used with virtually any type of data, such as named categorical data or discrete data that requires sensible breaks.
+
 This method is often used
 
 **continuous → continuous**
@@ -197,3 +220,79 @@ d3.min(data, d => d[someAttr])
 d3.max(data, d => d[someAttr])
 d3.extent(data, d => d[someAttr]) // returns [min, max]
 ```
+
+## D3 Filter & Update
+
+### the enter-update-exit pattern
+
+**.data(data, key)**
+
+The `.data()` function is powerful because it not only binds data to our selection and calculates the enter selection, it also calculates our update and exit selection as well.
+
+To help with the calculation, we'll often times pass in a key function:
+
+```js
+const data = [45, 67, 96, 84, 41]
+```
+
+![](./assets/filter_data_1.jpeg)
+
+↑ this is a pretty trivial example because we're using the bound integer datum as the key. Usually we'd pass in an unique ID (within an object) and use that.
+
+With the key function, D3.js calculates the update, exit, and enter selections:
+
+![](./assets/filter_data_2.jpeg)
+![](./assets/filter_data_3.jpeg)
+![](./assets/filter_data_4.jpeg)
+
+* If a key function isn't provided, D3.js defaults to using the integer as the key.
+
+Example:
+
+```js
+d3.select(svg).selectAll('rect')
+  .data(newData, d => d)
+  .join('rect') // takes care of enter & exit in one
+  // returns the enter+update selection,
+  // so we can set all our attributes on it:
+  .attr('x', (d, i) => i * rectWidth)
+  .attr('width', rectWidth)
+  ...
+
+// If we want access to specific selections to operate on them:
+
+d3.select(svg).selectAll('rect')
+  .data(newData, d => d)
+  .join(
+    enter => {
+      // return so it can be joined with update selection
+      return enter.append('rect')
+        // set attributes etc. on only enter selection
+    },
+    update => update,
+    exit => {
+      // do something with exit selection
+    }
+  )
+  // .join() returns enter+update selection
+  // so can also chain attributes here
+  ...
+```
+
+## D3.js transitions
+
+Transitions are how we animate attributes and styles from one state to the next in D3.js. This is really important for us to maintain object constancy, so that we can visually keep track of all the updates happening.
+
+D3.js has a lot of support for controlling the timing, easing, chaining, or even creating custom animations, but for today, we'll cover the simplest (but still powerful) way to use D3.js transitions.
+
+```js
+// define the transition
+const t = d3.transition().duration(1000)
+
+selection
+  // attributes or styles to transition FROM
+  .transition(t)
+  // attributes or styles to transition TO
+```
+
+> D3.js knows to animate the attributes or styles that comes after .transition(t), and will use those as the values to transition to. 🚨 If there are no corresponding attribute declarations before .transition(t), D3.js will use the SVG element's defaults to transition from.
