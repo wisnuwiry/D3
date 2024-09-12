@@ -13,9 +13,11 @@ D3.js is probably the de facto Javascript library for creating data visualizatio
 | 5  | Group ([link](./excercies/5-group.html))  |
 | 6  | Update ([link](./excercies/6-update.html))  |
 | 7  | Animate Transition ([link](./excercies/7-animate-transition.html))  |
+| 8  | Filter ([link](./excercies/8-filtering.html))  |
+| 9  | Force Graph ([link](./excercies/9-force-graph.html))  |
 
 
-## ✨ lessons & key takeaways 
+<!-- ## ✨ lessons & key takeaways 
 
 1. [Draw a flower petal on the screen](https://observablehq.com/d/c6629eb98b76cea3)
   - SVG coordinate system
@@ -39,7 +41,7 @@ D3.js is probably the de facto Javascript library for creating data visualizatio
   - D3 transitions
 7. [Position film flowers by the genres they share](https://observablehq.com/d/a25aafa93f553da6)
   - D3 shapes and hierarchies
-  - D3 force layout
+  - D3 force layout -->
 
 ## ✨ data visualization ecosystem & resources
 
@@ -296,3 +298,42 @@ selection
 ```
 
 > D3.js knows to animate the attributes or styles that comes after .transition(t), and will use those as the values to transition to. 🚨 If there are no corresponding attribute declarations before .transition(t), D3.js will use the SVG element's defaults to transition from.
+
+## D3 Shape
+
+[D3.js shape](https://d3js.org/d3-shape) functions help to calculate the path strings we need to draw line charts, area charts, pie charts, etc. They take in raw data and return path strings. https://d3js.org/d3-shape
+
+## D3.js hierarchy
+
+[D3.js hierarchy](https://d3js.org/d3-hierarchy) helps us calculate the x, y-positions and (where applicable) the width, height, radius for trees, tree maps, circle maps, etc. They also take in the raw data and return new objects without mutating the original data. https://d3js.org/d3-hierarchy
+
+## D3.js force
+
+The [D3.js force](https://d3js.org/d3-force) layout is probably my favorite layout module because of how powerful it is. It's a little bit different from the others I've already mentioned, because it directly mutates the data we pass in and requires upwards of thousands of calculations instead of one single one.
+
+More deep dive about force: https://medium.com/@sxywu/understanding-the-force-ef1237017d5
+
+![](./assets/force_example.png)
+
+This is the relevant code from the Les Mis example above:
+
+```js
+const simulation = d3.forceSimulation(nodes)
+  .force("link", d3.forceLink(links).id(d => d.id))
+  .force("charge", d3.forceManyBody())
+  .force("center", d3.forceCenter(width / 2, height / 2))
+  .on("tick", () => {
+    // update node and link positions
+  })
+```
+
+Let's break down what D3.js is doing underneath the hood:
+
+1. Takes array of nodes and assigns a random x, y-position to each of them
+2. Loops through each node and applies the series of forces specified in .force():
+  - Attractive forces pull nodes together to conserve space (e.g. links between nodes)
+  - Negative forces push nodes apart to avoid overlap between them (e.g. negative charges and collision forces)
+  - All of these forces together nudge the node positions slightly, and these series of calculations happen in one "tick"
+3. Runs thousands of "ticks" until the nodes are nudged to their "optimal" positions
+
+To use the calculated node and link positions, we update the corresponding DOM elements either on each "tick" `(.on('tick', () => ...))` or on simulation end `(.on('end', () => ...))`.

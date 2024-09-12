@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8 - Filtering</title>
+</head>
+
+<body>
+    <p><strong>Genres</strong></p>
+    <form id="genre-forms" style="display: flex; flex-direction: row; gap: 0.5rem"></form>
+    <p><strong>Rated</strong></p>
+    <form id="rated-forms" style="display: flex; flex-direction: row; gap: 0.5rem"></form>
+    <br>
+    <div id="container">
+        <svg></svg>
+    </div>
+
+    <script type="module">
+        import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
+
+        const topGenresOther = ["Action", "Comedy", "Animation", "Drama", "Other"];
+        const rated = ['G', 'PG', 'PG-13', 'R']
+        let movies = []
+
+        fetch('https://api.npoint.io/36aa0ccdda2dcf18ee05')
+            .then(resp => resp.json())
+            .then(data => {
+                movies = data;
+                setupCheckboxs(document.getElementById('genre-forms'), topGenresOther, () => onChangeFilter())
+                setupCheckboxs(document.getElementById('rated-forms'), rated, () => onChangeFilter())
+                renderSVG(movies)
+            })
+
+        function times(n, iteratee) {
+            return Array.from({ length: n }, (_, i) => iteratee(i));
+        }
+
+        const renderSVG = (data) => {
+            const width = document.body.clientWidth
+            const pathWidth = 120
+            const perRow = Math.floor(width / pathWidth)
+            const height = (Math.ceil(data.length / perRow) + 0.5) * pathWidth
+
+            const calculateGridPos = (i) => {
+                return [(i % perRow + 0.5) * pathWidth, (Math.floor(i / perRow) + 0.5) * pathWidth]
+            }
+
+            const petalPaths = [
+                'M0 0 C50 50 50 100 0 100 C-50 100 -50 50 0 0',
+                'M-35 0 C-25 25 25 25 35 0 C50 25 25 75 0 100 C-25 75 -50 25 -35 0',
+                'M0,0 C50,40 50,70 20,100 L0,85 L-20,100 C-50,70 -50,40 0,0',
+                'M0 0 C50 25 50 75 0 100 C-50 75 -50 25 0 0',
+            ]
+            const colorObj = { Action: "#ffc8f0", Comedy: "#cbf2bd", Animation: "#afe9ff", Drama: "#ffb09e", Other: "#fff2b4" }
+            const topGenres = ["Action", "Comedy", "Animation", "Drama"]
+            const petalColors = ['#ffc8f0', '#cbf2bd', '#afe9ff', '#ffb09e']
+
+            const calculateData = (data) => {
+                // movie genre → `color` (color of petals)
+                const colorScale = d3.scaleOrdinal()
+                    .domain(topGenres)
+                    .range(petalColors)
+                    .unknown(colorObj.Other) // set the color other, if the data unknown
+
+                // `rated` → `path` (type of flower petal)
+                const pathScale = d3.scaleOrdinal()
+                    .range(petalPaths)
+
+                // `rating` → `scale` (size of petals)
+                const minMaxRating = d3.extent(data, d => d.rating)
+                const sizeScale = d3.scaleLinear()
+                    .domain(minMaxRating)
+                    .range([0.2, 0.75])
+
+                // `votes` → `numPetals` (number of petals)
+                const minMaxVotes = d3.extent(data, d => d.votes)
+                const numPetalScale = d3.scaleQuantize()
+                    .domain(minMaxVotes)
+                    .range([5, 6, 7, 8, 9, 10])
+
+                return data.map((d, i) => ({
+                    color: colorScale(d.genres[0]),
+                    scale: sizeScale(d.rating),
+                    numPetals: numPetalScale(d.votes),
+                    title: d.title,
+                    path: pathScale(d.rated),
+                    translate: calculateGridPos(i),
+                }))
+            }
+
+            function truncateText(text, maxLength) {
+                // If the text is shorter or equal to maxLength, return it unchanged
+                if (text.length <= maxLength) {
+                    return text;
+                }
+
+                // Otherwise, return the truncated text with ellipsis
+                return text.slice(0, maxLength) + '...';
+            }
+
+            const filteredFlowers = calculateData(data)
+            const t = d3.transition().duration(1000)
+
+            const svg = d3.select('svg')
+                .attr('width', width)
+                .attr('height', height)
+                .attr('style', 'border: 1px dashed')
+
+            // Create group elements
+            const g = svg.selectAll('g')
+                .data(filteredFlowers, d => d.title)
+                .join(
+                    enter => {
+                        const g = enter.append('g')
+                            .attr('opacity', 0)
+
+                        // create paths * texts
+                        g.selectAll('path')
+                            .data(d => times(d.numPetals, i => {
+                                return { rotate: i * (360 / d.numPetals), ...d }
+                            })).join('path') // enter+update+exit
+                            .attr('transform', d => `rotate(${d.rotate})scale(${d.scale})`)
+                            .attr('d', d => d.path)
+                            .attr('fill', d => d.color)
+                            .attr('stroke', d => d.color)
+                            .attr('fill-opacity', 0.5)
+                            .attr('stroke-width', 2)
+
+                        g.append('text')
+                            .attr('text-anchor', 'middle')
+                            .attr('dy', '.38em')
+                            .style('font-size', '0.7em')
+                            .text(d => truncateText(d.title, 20))
+
+                        return g
+                    },
+                    update => update,
+                    exit => {
+                        exit.transition(t)
+                            .attr('opacity', 0)
+                            .remove()
+                    }
+                )
+                .transition(t)
+                .attr('opacity', 1)
+                .attr('transform', d => `translate(${d.translate})`)
+
+            document.getElementById('container').append(svg.node())
+        }
+
+        const onChangeFilter = (type) => {
+            let genreFilter = []
+            let ratedFilter = []
+
+            // Get all checkboxes
+            const genreCheckboxes = document.getElementById('genre-forms').querySelectorAll('input[type="checkbox"]:checked');
+            const ratedCheckboxes = document.getElementById('rated-forms').querySelectorAll('input[type="checkbox"]:checked');
+
+            // Add selected genres to the list
+            genreCheckboxes.forEach(checkbox => {
+                genreFilter = genreFilter.concat(checkbox.value);
+            });
+            ratedCheckboxes.forEach(checkbox => {
+                ratedFilter = ratedFilter.concat(checkbox.value);
+            });
+
+            const data = movies.filter((e) => {
+                return ratedFilter.includes(e.rated) && genreFilter.includes(...e.genres)
+            })
+
+            renderSVG(data);
+        }
+
+        const setupCheckboxs = (form, filters, onChange) => {
+            filters.forEach(item => {
+                // Create a label and checkbox
+                const label = document.createElement('label');
+                const checkbox = document.createElement('input');
+
+                // Set checkbox attributes
+                checkbox.type = 'checkbox';
+                checkbox.value = item;
+                checkbox.checked = true; // All checkboxes selected by default
+
+                // Listen to changes
+                checkbox.addEventListener('change', onChange);
+
+                // Add checkbox and text to the label
+                label.appendChild(checkbox);
+                label.appendChild(document.createTextNode(item));
+
+                // Add label to the form
+                form.appendChild(label);
+            });
+        }
+    </script>
+</body>
+
+</html>

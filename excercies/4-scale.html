@@ -13,7 +13,7 @@
     <script type="module">
         import * as d3 from "https://cdn.jsdelivr.net/npm/d3@7/+esm";
 
-        fetch('https://api.npoint.io/241d9ddae0e48a1fbf36')
+        fetch('https://api.npoint.io/36aa0ccdda2dcf18ee05')
             .then(resp => resp.json())
             .then(movies => {
                 renderSVG(movies)
@@ -30,10 +30,10 @@
             }
 
             const petalPaths = [
-                'M0 0 C50 50 50 100 0 100 C-50 100 -50 50 0 0',
-                'M-35 0 C-25 25 25 25 35 0 C50 25 25 75 0 100 C-25 75 -50 25 -35 0',
-                'M0,0 C50,40 50,70 20,100 L0,85 L-20,100 C-50,70 -50,40 0,0',
-                'M0 0 C50 25 50 75 0 100 C-50 75 -50 25 0 0',
+                "M0 0 C50 50 50 100 0 100 C-50 100 -50 50 0 0", 
+                "M-35 0 C-25 25 25 25 35 0 C50 25 25 75 0 100 C-25 75 -50 25 -35 0",
+                "M0,0 C50,40 50,70 20,100 L0,85 L-20,100 C-50,70 -50,40 0,0", 
+                "M0 0 C50 25 50 75 0 100 C-50 75 -50 25 0 0"
             ]
             const colorObj = { Action: "#ffc8f0", Comedy: "#cbf2bd", Animation: "#afe9ff", Drama: "#ffb09e", Other: "#fff2b4" }
             const topGenres = ["Action", "Comedy", "Animation", "Drama"]
